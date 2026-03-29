@@ -3,3 +3,5 @@ tests
 data
 *.json
 *.csv
+refining_anime.ipynb
+refining_manga.ipynb
