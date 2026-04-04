@@ -5,3 +5,4 @@ data
 *.csv
 refining_anime.ipynb
 refining_manga.ipynb
+__pycache__
