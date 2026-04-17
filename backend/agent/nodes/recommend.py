@@ -107,8 +107,14 @@ def recommend_node(state: AgentState) -> AgentState:
     Call the pre-trained recommender model with the enriched state data.
 
     Flow:
-        state → build payload → load model (cached) → model.recommend(payload)
-        → raw results list → state["results"]
+        state → choose payload (enriched or legacy) → load model (cached)
+        → model.recommend(payload) → raw results list → state["results"]
+
+    When state["model_input"] is non-empty, the full enriched payload built
+    by the reasoning node is passed directly to model.recommend().  When it
+    is empty (e.g. the node was called without a reasoning step), the node
+    falls back to the legacy {tags, type, reference} format for backwards
+    compatibility.
 
     Args:
         state: AgentState after reasoning node has enriched the tags.
@@ -124,14 +130,29 @@ def recommend_node(state: AgentState) -> AgentState:
     media_type: str = state.get("type", "anime")
     tags: List[str] = state.get("tags", [])
     reference: str  = state.get("reference", "")
+    model_input: Dict[str, Any] = state.get("model_input", {})
 
-    # ── Build the input payload ────────────────────────────────────────────
-    # This is the exact dict your model.recommend() will receive.
-    input_data: Dict[str, Any] = {
-        "tags":      tags,
-        "type":      media_type,
-        "reference": reference,
-    }
+    # ── Choose the input payload ───────────────────────────────────────────
+    # Use the enriched model_input built by the reasoning node when available;
+    # fall back to the legacy flat payload for backwards compatibility.
+    if model_input:
+        input_data = model_input
+        payload_format = "enriched"
+    else:
+        input_data = {
+            "tags":      tags,
+            "type":      media_type,
+            "reference": reference,
+        }
+        payload_format = "legacy"
+
+    # ── Append reasoning trace entry ───────────────────────────────────────
+    reasoning_trace: List[str] = state.get("reasoning_trace", [])
+    reasoning_trace.append(
+        f"recommend_node: using {payload_format} payload format "
+        f"({'model_input was populated' if payload_format == 'enriched' else 'model_input was empty — falling back to legacy {tags, type, reference} format'})."
+    )
+    state["reasoning_trace"] = reasoning_trace
 
     # ── Load model (first call reads disk; subsequent calls use lru_cache) ─
     model = _get_model(media_type)

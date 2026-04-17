@@ -1,12 +1,20 @@
 """
 graph.py — LangGraph execution graph for the recommendation agent.
 
-Defines the node pipeline and wires them together:
+Defines the node pipeline and wires them together with conditional routing
+and a bounded refinement loop:
 
-    process → reasoning → recommend → output
-
-The recommend node self-loads its pre-trained .pkl model — no external
-injection needed. Just call run_agent(query) and the graph handles everything.
+    process_node
+        ↓ route_query (conditional)
+    simple_reasoning_node  OR  deep_reasoning_node
+        ↓ (both converge)
+    recommend_node
+        ↓
+    evaluator_node
+        ↓ route_evaluation (conditional)
+    refine_node  →  recommend_node  (loop, max 2 times)
+        OR
+    output_node  →  END
 
 Usage (from FastAPI or any entry point):
 
@@ -14,46 +22,107 @@ Usage (from FastAPI or any entry point):
 
     result = run_agent("dark anime like Attack on Titan")
     print(result["results"])
+    print(result["reasoning_trace"])
+    print(result["refinement_count"])
 """
 
 from langgraph.graph import StateGraph, END
 
 from agent.state import AgentState, initial_state
 from agent.nodes.process   import process_node
-from agent.nodes.reasoning import reasoning_node
+from agent.nodes.reasoning import simple_reasoning_node, deep_reasoning_node
 from agent.nodes.recommend import recommend_node
+from agent.nodes.evaluator import evaluator_node
+from agent.nodes.refine    import refine_node
 from agent.nodes.output    import output_node
 
 # Build once at import time — graph structure never changes at runtime
 _compiled_graph = None
 
 
+# ── Conditional edge functions ────────────────────────────────────────────────
+
+def route_query(state: AgentState) -> str:
+    """
+    Route after process_node based on query complexity.
+
+    Returns:
+        "deep_reasoning_node"   when complexity_score >= 0.5
+        "simple_reasoning_node" otherwise
+    """
+    if state["complexity_score"] >= 0.5:
+        return "deep_reasoning_node"
+    return "simple_reasoning_node"
+
+
+def route_evaluation(state: AgentState) -> str:
+    """
+    Route after evaluator_node: accept results or trigger a refinement cycle.
+
+    Returns:
+        "refine_node"  when verdict == "needs_refinement" AND refinement_count < 2
+        "output_node"  in all other cases
+    """
+    verdict = state["quality_report"].get("verdict", "quality_ok")
+    if verdict == "needs_refinement" and state["refinement_count"] < 2:
+        return "refine_node"
+    return "output_node"
+
+
+# ── Graph builder ─────────────────────────────────────────────────────────────
+
 def build_graph() -> StateGraph:
     """
     Construct and compile the LangGraph StateGraph for the agent pipeline.
 
-    Nodes are registered in execution order. Each node:
-        1. Receives the shared AgentState
-        2. Performs its focused responsibility
-        3. Returns the updated AgentState
+    Nodes are registered and wired with conditional edges for complexity-based
+    routing and a bounded quality-evaluation refinement loop.
 
     Returns:
-        A compiled LangGraph runnable — call .invoke({"query": ...}) on it.
+        A compiled LangGraph runnable — call .invoke(state) on it.
     """
     graph = StateGraph(AgentState)
 
-    # ── Register nodes in pipeline order ──────────────────────────────────
-    graph.add_node("process",   process_node)    # parse raw query
-    graph.add_node("reasoning", reasoning_node)  # expand tags from dataset
-    graph.add_node("recommend", recommend_node)  # call pre-trained .pkl model
-    graph.add_node("output",    output_node)     # format for frontend
+    # ── Register all seven nodes ───────────────────────────────────────────
+    graph.add_node("process_node",          process_node)
+    graph.add_node("simple_reasoning_node", simple_reasoning_node)
+    graph.add_node("deep_reasoning_node",   deep_reasoning_node)
+    graph.add_node("recommend_node",        recommend_node)
+    graph.add_node("evaluator_node",        evaluator_node)
+    graph.add_node("refine_node",           refine_node)
+    graph.add_node("output_node",           output_node)
 
-    # ── Define execution edges ─────────────────────────────────────────────
-    graph.set_entry_point("process")
-    graph.add_edge("process",   "reasoning")
-    graph.add_edge("reasoning", "recommend")
-    graph.add_edge("recommend", "output")
-    graph.add_edge("output",    END)
+    # ── Entry point ────────────────────────────────────────────────────────
+    graph.set_entry_point("process_node")
+
+    # ── Conditional routing: simple vs. complex reasoning ──────────────────
+    graph.add_conditional_edges(
+        "process_node",
+        route_query,
+        {
+            "simple_reasoning_node": "simple_reasoning_node",
+            "deep_reasoning_node":   "deep_reasoning_node",
+        }
+    )
+
+    # ── Both reasoning paths feed into the model ───────────────────────────
+    graph.add_edge("simple_reasoning_node", "recommend_node")
+    graph.add_edge("deep_reasoning_node",   "recommend_node")
+    graph.add_edge("recommend_node",        "evaluator_node")
+
+    # ── Conditional routing: accept or refine loop ─────────────────────────
+    graph.add_conditional_edges(
+        "evaluator_node",
+        route_evaluation,
+        {
+            "refine_node": "refine_node",
+            "output_node": "output_node",
+        }
+    )
+
+    # ── Refinement loops back to the model (tags already expanded) ─────────
+    graph.add_edge("refine_node", "recommend_node")
+    graph.add_edge("output_node", END)
 
     return graph.compile()
 
@@ -74,11 +143,14 @@ def run_agent(query: str) -> dict:
         query: Raw user input string (e.g. "dark anime like Death Note").
 
     Returns:
-        {"results": [ {"title": ..., "image": ..., "synopsis": ...,
-                        "score": float, "genres": [...]} ]}
+        {
+            "results":          list of normalised recommendation dicts,
+            "reasoning_trace":  list of human-readable decision strings,
+            "refinement_count": number of refinement cycles that occurred,
+        }
 
     Raises:
-        ValueError        : If query is empty.
+        ValueError        : If query is empty or whitespace-only.
         FileNotFoundError : If the .pkl model file is missing.
         RuntimeError      : If any node in the pipeline fails.
     """
@@ -89,4 +161,8 @@ def run_agent(query: str) -> dict:
     state  = initial_state(query)
     result = graph.invoke(state)
 
-    return {"results": result.get("results", [])}
+    return {
+        "results":          result.get("results", []),
+        "reasoning_trace":  result.get("reasoning_trace", []),
+        "refinement_count": result.get("refinement_count", 0),
+    }

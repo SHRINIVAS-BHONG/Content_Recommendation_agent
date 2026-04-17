@@ -6,3 +6,7 @@ data
 refining_anime.ipynb
 refining_manga.ipynb
 __pycache__
+.kiro
+.vscode
+.hypothesis
+.pytest_cache

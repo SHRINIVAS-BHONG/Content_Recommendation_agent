@@ -4,7 +4,7 @@ utils/helpers.py — Shared utility functions used across the agent pipeline.
 Keeps generic, reusable logic separate from node / service business logic.
 """
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 
 def deduplicate(items: List[Any]) -> List[Any]:
@@ -62,9 +62,10 @@ def format_score(score: Any) -> float:
 def normalize_result(raw: Dict) -> Dict:
     """
     Normalize a single raw result dict from the ML module into the expected
-    output schema. Fills missing fields with safe defaults.
+    output schema. Fills missing fields with safe defaults and passes through
+    optional model-provided fields when present.
 
-    Expected output schema:
+    Required output schema:
         {
             "title"    : str,
             "image"    : str  (URL),
@@ -73,16 +74,26 @@ def normalize_result(raw: Dict) -> Dict:
             "genres"   : list[str]
         }
 
+    Optional pass-through fields (included as None when the model doesn't provide them):
+        {
+            "similarity_score" : float | None,
+            "match_reason"     : str   | None,
+        }
+
     Args:
         raw: A dict returned by the ML recommender (structure may vary).
 
     Returns:
-        Normalized dict matching the frontend contract.
+        Normalized dict matching the frontend contract, with optional fields
+        included (as None) so callers can always rely on their presence.
     """
     return {
-        "title":    safe_get(raw, "title",    default="Unknown"),
-        "image":    safe_get(raw, "image",    default=""),
-        "synopsis": safe_get(raw, "synopsis", default="No synopsis available."),
-        "score":    format_score(safe_get(raw, "score", default=0.0)),
-        "genres":   safe_get(raw, "genres",   default=[]),
+        "title":            safe_get(raw, "title",            default="Unknown"),
+        "image":            safe_get(raw, "image",            default=""),
+        "synopsis":         safe_get(raw, "synopsis",         default="No synopsis available."),
+        "score":            format_score(safe_get(raw, "score", default=0.0)),
+        "genres":           safe_get(raw, "genres",           default=[]),
+        # Optional fields — passed through as-is; None when absent
+        "similarity_score": raw.get("similarity_score", None),
+        "match_reason":     raw.get("match_reason",     None),
     }
