@@ -10,3 +10,4 @@ __pycache__
 .vscode
 .hypothesis
 .pytest_cache
+CODEBASE.md
