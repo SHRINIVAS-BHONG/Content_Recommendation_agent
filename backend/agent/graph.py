@@ -29,6 +29,7 @@ Usage (from FastAPI or any entry point):
 from langgraph.graph import StateGraph, END
 
 from agent.state import AgentState, initial_state
+from typing import Optional, Dict, Any, List
 from agent.nodes.process   import process_node
 from agent.nodes.reasoning import simple_reasoning_node, deep_reasoning_node
 from agent.nodes.recommend import recommend_node
@@ -135,18 +136,33 @@ def _get_graph():
     return _compiled_graph
 
 
-def run_agent(query: str) -> dict:
+def run_agent(
+    query: str,
+    user_id: Optional[str] = None,
+    user_preferences: Optional[Dict[str, Any]] = None,
+    conversation_context: Optional[Dict[str, Any]] = None,
+    user_feedback_history: Optional[List[Dict[str, Any]]] = None,
+) -> dict:
     """
     Run the full agent pipeline for a user query.
 
+    Supports both authenticated and anonymous modes. When user_id is provided
+    the pipeline receives user context for personalised recommendations.
+
     Args:
         query: Raw user input string (e.g. "dark anime like Death Note").
+        user_id: Optional authenticated user UUID string.
+        user_preferences: Optional dict with preferred/avoided genres and
+                          content type preferences.
+        conversation_context: Optional dict with recent queries and results.
+        user_feedback_history: Optional list of past feedback records.
 
     Returns:
         {
             "results":          list of normalised recommendation dicts,
             "reasoning_trace":  list of human-readable decision strings,
             "refinement_count": number of refinement cycles that occurred,
+            "is_authenticated": bool indicating whether user context was used,
         }
 
     Raises:
@@ -158,11 +174,18 @@ def run_agent(query: str) -> dict:
         raise ValueError("run_agent: query must be a non-empty string.")
 
     graph  = _get_graph()
-    state  = initial_state(query)
+    state  = initial_state(
+        query=query,
+        user_id=user_id,
+        user_preferences=user_preferences,
+        conversation_context=conversation_context,
+        user_feedback_history=user_feedback_history,
+    )
     result = graph.invoke(state)
 
     return {
         "results":          result.get("results", []),
         "reasoning_trace":  result.get("reasoning_trace", []),
         "refinement_count": result.get("refinement_count", 0),
+        "is_authenticated": result.get("is_authenticated", False),
     }

@@ -121,10 +121,11 @@ def simple_reasoning_node(state: AgentState) -> AgentState:
     Flow:
         1. Expand base tags using dataset co-occurrence.
         2. Merge reference title tags if reference is non-empty.
-        3. Deduplicate tags.
-        4. Set search_strategy = "tag_only".
-        5. Build model_input with all required keys.
-        6. Append a trace entry.
+        3. Apply user personalization if authenticated.
+        4. Deduplicate tags.
+        5. Set search_strategy = "tag_only".
+        6. Build model_input with all required keys.
+        7. Append a trace entry.
 
     Args:
         state: AgentState with tags, type, reference, intent, semantic_hints,
@@ -141,6 +142,11 @@ def simple_reasoning_node(state: AgentState) -> AgentState:
     semantic_hints: list = state.get("semantic_hints", [])
     reference_synopsis: str = state.get("reference_synopsis", "")
     reasoning_trace: list = list(state.get("reasoning_trace", []))
+    
+    # User context fields
+    is_authenticated: bool = state.get("is_authenticated", False)
+    user_preferences: dict = state.get("user_preferences") or {}
+    conversation_context: dict = state.get("conversation_context") or {}
 
     # ── Step 1: Expand base tags using dataset co-occurrence ───────────────
     expanded = expand_tags(current_tags, media_type=media_type)
@@ -150,13 +156,32 @@ def simple_reasoning_node(state: AgentState) -> AgentState:
         ref_tags = get_reference_tags(reference, media_type=media_type)
         expanded.extend(ref_tags)
 
-    # ── Step 3: Deduplicate while preserving order ─────────────────────────
+    # ── Step 3: Apply user personalization if authenticated ────────────────
+    if is_authenticated:
+        # Add preferred genres as tags if not already present
+        preferred_genres = user_preferences.get("preferred_genres", [])
+        for genre in preferred_genres:
+            if genre.lower() not in [tag.lower() for tag in expanded]:
+                expanded.append(genre)
+        
+        # Remove avoided genres
+        avoided_genres = user_preferences.get("avoided_genres", [])
+        avoided_lower = [genre.lower() for genre in avoided_genres]
+        expanded = [tag for tag in expanded if tag.lower() not in avoided_lower]
+        
+        reasoning_trace.append(
+            f"[simple_reasoning_node] Applied user personalization: "
+            f"added {len(preferred_genres)} preferred genres, "
+            f"filtered {len(avoided_genres)} avoided genres."
+        )
+
+    # ── Step 4: Deduplicate while preserving order ─────────────────────────
     deduped_tags = deduplicate(expanded)
 
-    # ── Step 4: Set search strategy ────────────────────────────────────────
+    # ── Step 5: Set search strategy ────────────────────────────────────────
     search_strategy = "tag_only"
 
-    # ── Step 5: Build model_input with all required keys ───────────────────
+    # ── Step 6: Build model_input with all required keys ───────────────────
     model_input = {
         "tags":               deduped_tags,
         "type":               media_type,
@@ -166,14 +191,19 @@ def simple_reasoning_node(state: AgentState) -> AgentState:
         "search_strategy":    search_strategy,
         "reference_synopsis": reference_synopsis,
         "complexity":         "simple",
+        # User context for personalization
+        "is_authenticated":   is_authenticated,
+        "user_preferences":   user_preferences,
+        "conversation_context": conversation_context,
     }
 
-    # ── Step 6: Append trace entry ─────────────────────────────────────────
+    # ── Step 7: Append trace entry ─────────────────────────────────────────
     reasoning_trace.append(
         f"[simple_reasoning_node] Expanded {len(current_tags)} base tag(s) to "
         f"{len(deduped_tags)} tag(s) via co-occurrence. "
         f"search_strategy={search_strategy!r}. "
-        f"reference={reference!r}."
+        f"reference={reference!r}. "
+        f"authenticated={is_authenticated}."
     )
 
     # ── Update state ───────────────────────────────────────────────────────
@@ -194,11 +224,12 @@ def deep_reasoning_node(state: AgentState) -> AgentState:
     Flow:
         1. Expand base tags using dataset co-occurrence.
         2. Translate semantic_hints into additional tags.
-        3. Look up reference synopsis from dataset when intent == "find_similar".
-        4. Set search_strategy based on intent mapping.
-        5. Build full model_input payload.
-        6. Deduplicate tags.
-        7. Append multiple trace entries.
+        3. Apply user personalization if authenticated.
+        4. Look up reference synopsis from dataset when intent == "find_similar".
+        5. Set search_strategy based on intent mapping.
+        6. Build full model_input payload.
+        7. Deduplicate tags.
+        8. Append multiple trace entries.
 
     Args:
         state: AgentState with tags, type, reference, intent, semantic_hints,
@@ -215,6 +246,11 @@ def deep_reasoning_node(state: AgentState) -> AgentState:
     semantic_hints: list = state.get("semantic_hints", [])
     reference_synopsis: str = state.get("reference_synopsis", "")
     reasoning_trace: list = list(state.get("reasoning_trace", []))
+    
+    # User context fields
+    is_authenticated: bool = state.get("is_authenticated", False)
+    user_preferences: dict = state.get("user_preferences") or {}
+    conversation_context: dict = state.get("conversation_context") or {}
 
     # ── Step 1: Expand base tags using dataset co-occurrence ───────────────
     expanded = expand_tags(current_tags, media_type=media_type)
@@ -239,7 +275,41 @@ def deep_reasoning_node(state: AgentState) -> AgentState:
         f"hints={semantic_hints!r} → added tags={hint_tags_added!r}."
     )
 
-    # ── Step 3: Reference synopsis lookup when intent == "find_similar" ────
+    # ── Step 3: Apply user personalization if authenticated ────────────────
+    personalization_applied = False
+    if is_authenticated:
+        # Add preferred genres as tags if not already present
+        preferred_genres = user_preferences.get("preferred_genres", [])
+        added_preferred = []
+        for genre in preferred_genres:
+            if genre.lower() not in [tag.lower() for tag in expanded]:
+                expanded.append(genre)
+                added_preferred.append(genre)
+        
+        # Remove avoided genres
+        avoided_genres = user_preferences.get("avoided_genres", [])
+        avoided_lower = [genre.lower() for genre in avoided_genres]
+        original_count = len(expanded)
+        expanded = [tag for tag in expanded if tag.lower() not in avoided_lower]
+        filtered_count = original_count - len(expanded)
+        
+        # Consider conversation context for deduplication hints
+        recent_results = conversation_context.get("recent_results", [])
+        if recent_results:
+            # Extract titles from recent results for deduplication later
+            recent_titles = [result.get("title", "") for result in recent_results[-10:]]
+            reasoning_trace.append(
+                f"[deep_reasoning_node] Step 3b: Found {len(recent_titles)} recent results for deduplication."
+            )
+        
+        personalization_applied = True
+        reasoning_trace.append(
+            f"[deep_reasoning_node] Step 3a: Applied user personalization — "
+            f"added {len(added_preferred)} preferred genres, "
+            f"filtered {filtered_count} avoided genre tags."
+        )
+
+    # ── Step 4: Reference synopsis lookup when intent == "find_similar" ────
     if intent == "find_similar":
         dataset_path = _ANIME_PATH if media_type == "anime" else _MANGA_PATH
         entries = _load_dataset(dataset_path)
@@ -273,7 +343,7 @@ def deep_reasoning_node(state: AgentState) -> AgentState:
             if found_entry is not None:
                 reference_synopsis = found_entry.get("synopsis", "") or ""
                 reasoning_trace.append(
-                    f"[deep_reasoning_node] Step 3: Found reference title "
+                    f"[deep_reasoning_node] Step 4: Found reference title "
                     f"{reference!r} in dataset. Synopsis length: "
                     f"{len(reference_synopsis)} chars."
                 )
@@ -284,13 +354,13 @@ def deep_reasoning_node(state: AgentState) -> AgentState:
                     f"not found in dataset. Setting reference_synopsis to empty string."
                 )
 
-    # ── Step 4: Set search_strategy based on intent ────────────────────────
+    # ── Step 5: Set search_strategy based on intent ────────────────────────
     search_strategy = _INTENT_TO_STRATEGY.get(intent, "tag_only")
 
-    # ── Step 5: Deduplicate tags ───────────────────────────────────────────
+    # ── Step 6: Deduplicate tags ───────────────────────────────────────────
     deduped_tags = deduplicate(expanded)
 
-    # ── Step 6: Build full model_input payload ─────────────────────────────
+    # ── Step 7: Build full model_input payload ─────────────────────────────
     model_input = {
         "tags":               deduped_tags,
         "type":               media_type,
@@ -300,11 +370,17 @@ def deep_reasoning_node(state: AgentState) -> AgentState:
         "search_strategy":    search_strategy,
         "reference_synopsis": reference_synopsis,
         "complexity":         "complex",
+        # User context for personalization
+        "is_authenticated":   is_authenticated,
+        "user_preferences":   user_preferences,
+        "conversation_context": conversation_context,
+        "personalization_applied": personalization_applied,
     }
 
     reasoning_trace.append(
-        f"[deep_reasoning_node] Step 4: search_strategy={search_strategy!r} "
-        f"(intent={intent!r}). Final tag count: {len(deduped_tags)}."
+        f"[deep_reasoning_node] Step 5: search_strategy={search_strategy!r} "
+        f"(intent={intent!r}). Final tag count: {len(deduped_tags)}. "
+        f"Personalization applied: {personalization_applied}."
     )
 
     # ── Update state ───────────────────────────────────────────────────────

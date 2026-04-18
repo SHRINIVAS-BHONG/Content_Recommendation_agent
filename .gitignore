@@ -11,3 +11,4 @@ __pycache__
 .hypothesis
 .pytest_cache
 CODEBASE.md
+.env

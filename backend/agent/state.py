@@ -5,7 +5,7 @@ Every node reads from this state, updates relevant fields, and returns it.
 This ensures a single source of truth throughout the pipeline.
 """
 
-from typing import TypedDict, List, Any, Dict
+from typing import TypedDict, List, Any, Dict, Optional
 
 
 class AgentState(TypedDict):
@@ -58,32 +58,79 @@ class AgentState(TypedDict):
     # ── New: Explainability ───────────────────────────────────────────────
     reasoning_trace: List[str]   # human-readable log of decisions made
 
+    # ── User context (authenticated users) ───────────────────────────────
+    is_authenticated: bool                          # True for authenticated users
+    user_id: Optional[str]                          # UUID string or None for anonymous
+    user_preferences: Optional[Dict[str, Any]]      # Learned genre/content preferences
+    conversation_context: Optional[Dict[str, Any]]  # Recent queries and results
+    user_feedback_history: Optional[List[Dict[str, Any]]]  # Past feedback records
+    personalization_weights: Optional[Dict[str, float]]    # Per-genre weight multipliers
 
-def initial_state(query: str) -> AgentState:
+
+def initial_state(
+    query: str,
+    user_id: Optional[str] = None,
+    user_preferences: Optional[Dict[str, Any]] = None,
+    conversation_context: Optional[Dict[str, Any]] = None,
+    user_feedback_history: Optional[List[Dict[str, Any]]] = None,
+) -> "AgentState":
     """
     Create a fresh state object with default empty values.
-    Call this at the graph entry point before running nodes.
+    Supports both authenticated and anonymous modes.
 
     Args:
         query: The raw user input string.
+        user_id: Optional user UUID string. When provided the state is
+                 initialised in authenticated mode.
+        user_preferences: Optional dict with preferred_genres, avoided_genres,
+                          content_types, personalization_level, etc.
+        conversation_context: Optional dict with recent_queries, recent_results,
+                              interaction_count, last_interaction_time.
+        user_feedback_history: Optional list of past feedback dicts.
 
     Returns:
         An AgentState with the query set and all other fields initialized.
+        When user_id is supplied, is_authenticated is True and personalization
+        weights are derived from user_preferences; otherwise the state degrades
+        gracefully to anonymous behaviour.
     """
+    is_authenticated = user_id is not None
+
+    # Build personalization weights from preferences when available
+    personalization_weights: Optional[Dict[str, float]] = None
+    if is_authenticated and user_preferences:
+        weights: Dict[str, float] = {}
+        for genre in user_preferences.get("preferred_genres", []):
+            weights[genre] = 1.5   # boost preferred genres
+        for genre in user_preferences.get("avoided_genres", []):
+            weights[genre] = 0.3   # suppress avoided genres
+        if weights:
+            personalization_weights = weights
+
     return AgentState(
         query=query,
         tags=[],
         type="anime",           # default type
         reference="",
         results=[],
-        # new defaults
+        # query understanding
         intent="genre_search",
         complexity_score=0.0,
         semantic_hints=[],
+        # model input enrichment
         search_strategy="hybrid",
         reference_synopsis="",
         model_input={},
+        # refinement loop
         refinement_count=0,
         quality_report={},
+        # explainability
         reasoning_trace=[],
+        # user context
+        is_authenticated=is_authenticated,
+        user_id=user_id,
+        user_preferences=user_preferences,
+        conversation_context=conversation_context,
+        user_feedback_history=user_feedback_history,
+        personalization_weights=personalization_weights,
     )

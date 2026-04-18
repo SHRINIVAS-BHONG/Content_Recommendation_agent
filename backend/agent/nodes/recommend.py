@@ -108,7 +108,8 @@ def recommend_node(state: AgentState) -> AgentState:
 
     Flow:
         state → choose payload (enriched or legacy) → load model (cached)
-        → model.recommend(payload) → raw results list → state["results"]
+        → model.recommend(payload) → apply personalization weights
+        → deduplicate against user history → state["results"]
 
     When state["model_input"] is non-empty, the full enriched payload built
     by the reasoning node is passed directly to model.recommend().  When it
@@ -116,11 +117,16 @@ def recommend_node(state: AgentState) -> AgentState:
     falls back to the legacy {tags, type, reference} format for backwards
     compatibility.
 
+    For authenticated users, personalization weights are applied to boost
+    or suppress recommendations based on user preferences, and deduplication
+    is performed against recent interaction history.
+
     Args:
         state: AgentState after reasoning node has enriched the tags.
 
     Returns:
-        Updated AgentState with state["results"] containing raw result dicts.
+        Updated AgentState with state["results"] containing personalized
+        and deduplicated result dicts.
 
     Raises:
         FileNotFoundError : Model .pkl file is missing.
@@ -131,6 +137,11 @@ def recommend_node(state: AgentState) -> AgentState:
     tags: List[str] = state.get("tags", [])
     reference: str  = state.get("reference", "")
     model_input: Dict[str, Any] = state.get("model_input", {})
+    
+    # User context fields
+    is_authenticated: bool = state.get("is_authenticated", False)
+    personalization_weights: Dict[str, float] = state.get("personalization_weights") or {}
+    conversation_context: Dict[str, Any] = state.get("conversation_context") or {}
 
     # ── Choose the input payload ───────────────────────────────────────────
     # Use the enriched model_input built by the reasoning node when available;
@@ -152,7 +163,6 @@ def recommend_node(state: AgentState) -> AgentState:
         f"recommend_node: using {payload_format} payload format "
         f"({'model_input was populated' if payload_format == 'enriched' else 'model_input was empty — falling back to legacy {tags, type, reference} format'})."
     )
-    state["reasoning_trace"] = reasoning_trace
 
     # ── Load model (first call reads disk; subsequent calls use lru_cache) ─
     model = _get_model(media_type)
@@ -174,12 +184,117 @@ def recommend_node(state: AgentState) -> AgentState:
             f"Input was: {input_data}\nError: {exc}"
         ) from exc
 
-    # ── Validate and store results ─────────────────────────────────────────
+    # ── Validate results ───────────────────────────────────────────────────
     if not isinstance(raw_results, list):
         raise RuntimeError(
             f"recommend_node: model.recommend() must return a list, "
             f"got {type(raw_results)} instead."
         )
 
-    state["results"] = raw_results
+    # ── Apply personalization for authenticated users ──────────────────────
+    personalized_results = raw_results
+    if is_authenticated and personalization_weights:
+        personalized_results = _apply_personalization_weights(
+            raw_results, personalization_weights
+        )
+        reasoning_trace.append(
+            f"recommend_node: Applied personalization weights to {len(raw_results)} results "
+            f"using {len(personalization_weights)} genre weights."
+        )
+
+    # ── Deduplicate against user history ───────────────────────────────────
+    final_results = personalized_results
+    if is_authenticated and conversation_context:
+        recent_results = conversation_context.get("recent_results", [])
+        if recent_results:
+            final_results = _deduplicate_against_history(
+                personalized_results, recent_results
+            )
+            deduped_count = len(personalized_results) - len(final_results)
+            reasoning_trace.append(
+                f"recommend_node: Deduplicated {deduped_count} results against "
+                f"{len(recent_results)} items in user history."
+            )
+
+    state["results"] = final_results
+    state["reasoning_trace"] = reasoning_trace
     return state
+
+
+def _apply_personalization_weights(
+    results: List[Dict[str, Any]], 
+    weights: Dict[str, float]
+) -> List[Dict[str, Any]]:
+    """
+    Apply personalization weights to recommendation results.
+    
+    Boosts or suppresses results based on genre preferences.
+    
+    Args:
+        results: List of recommendation dicts with 'genres' and 'score' fields
+        weights: Dict mapping genre names to weight multipliers
+    
+    Returns:
+        List of results with adjusted scores, sorted by new score
+    """
+    weighted_results = []
+    
+    for result in results:
+        # Make a copy to avoid modifying the original
+        weighted_result = result.copy()
+        original_score = float(result.get("score", 0.0))
+        
+        # Calculate weighted score based on genres
+        genres = result.get("genres", [])
+        if isinstance(genres, str):
+            genres = [genres]
+        
+        # Find the maximum weight for any genre in this result
+        max_weight = 1.0  # Default weight
+        for genre in genres:
+            if genre in weights:
+                max_weight = max(max_weight, weights[genre])
+        
+        # Apply the weight
+        weighted_score = original_score * max_weight
+        weighted_result["score"] = weighted_score
+        weighted_result["original_score"] = original_score
+        weighted_result["personalization_weight"] = max_weight
+        
+        weighted_results.append(weighted_result)
+    
+    # Sort by weighted score (descending)
+    weighted_results.sort(key=lambda x: x.get("score", 0.0), reverse=True)
+    
+    return weighted_results
+
+
+def _deduplicate_against_history(
+    results: List[Dict[str, Any]], 
+    recent_results: List[Dict[str, Any]]
+) -> List[Dict[str, Any]]:
+    """
+    Remove results that were recently recommended to the user.
+    
+    Args:
+        results: Current recommendation results
+        recent_results: List of recently recommended items
+    
+    Returns:
+        Filtered results with duplicates removed
+    """
+    # Extract titles from recent results for comparison
+    recent_titles = set()
+    for item in recent_results:
+        title = item.get("title", "")
+        if title:
+            recent_titles.add(title.lower().strip())
+    
+    # Filter out results that match recent titles
+    deduplicated = []
+    for result in results:
+        title = result.get("title", "")
+        if title and title.lower().strip() not in recent_titles:
+            deduplicated.append(result)
+    
+    return deduplicated
