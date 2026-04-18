@@ -691,6 +691,8 @@ The `refine_node` applies up to 3 strategies:
 | `backend/utils/` | Shared helper functions |
 | `data/` | Pre-trained models & datasets (gitignored) |
 
+> 📖 For a detailed breakdown of every file and function, see [CODEBASE.md](./CODEBASE.md)
+
 ---
 
 ## 🔧 Configuration

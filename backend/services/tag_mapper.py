@@ -32,23 +32,39 @@ _MANGA_PATH = _BASE_DIR / "data" / "refined_manga_dataset.json"
 _TOP_N_RELATED = 6
 
 # ── Semantic fallback for mood/vibe words that users type ─────────────────────
-# These words are unlikely to appear as-is in the dataset tags but are common
-# in queries. Maps them to real dataset genre/tag equivalents.
+# Maps user-typed mood words to real tags from refined_anime/manga_dataset.json
 _SEMANTIC_FALLBACK: Dict[str, List[str]] = {
-    "dark":       ["psychological", "tragedy", "horror", "drama"],
-    "sad":        ["drama", "tragedy", "romance"],
-    "funny":      ["comedy", "parody", "slice of life"],
-    "scary":      ["horror", "supernatural", "thriller"],
-    "emotional":  ["drama", "romance", "tragedy", "slice of life"],
-    "epic":       ["action", "adventure", "fantasy", "shounen"],
-    "slow":       ["slice of life", "drama", "romance"],
-    "cute":       ["slice of life", "comedy", "romance", "school"],
-    "complex":    ["psychological", "mystery", "thriller", "drama"],
-    "feel-good":  ["comedy", "slice of life", "romance"],
-    "violent":    ["action", "military", "horror", "seinen"],
-    "romantic":   ["romance", "drama", "shoujo"],
-    "futuristic": ["sci-fi", "mecha", "cyberpunk"],
-    "magical":    ["magic", "fantasy", "supernatural"],
+    "dark":       ["psychological", "horror", "gore", "drama", "seinen"],
+    "sad":        ["drama", "tragedy", "romance", "slice of life"],
+    "funny":      ["comedy", "parody", "gag humor", "slice of life"],
+    "scary":      ["horror", "supernatural", "suspense", "mystery"],
+    "emotional":  ["drama", "romance", "slice of life", "iyashikei"],
+    "epic":       ["action", "adventure", "fantasy", "shounen", "military"],
+    "slow":       ["slice of life", "iyashikei", "drama", "romance"],
+    "cute":       ["slice of life", "comedy", "romance", "school", "cgdct"],
+    "complex":    ["psychological", "mystery", "suspense", "avant garde"],
+    "feel-good":  ["comedy", "slice of life", "romance", "iyashikei"],
+    "violent":    ["action", "military", "gore", "horror", "seinen"],
+    "romantic":   ["romance", "drama", "shoujo", "romantic subtext"],
+    "futuristic": ["sci-fi", "mecha", "space", "time travel"],
+    "magical":    ["mahou shoujo", "fantasy", "supernatural", "mythology"],
+    "wholesome":  ["slice of life", "iyashikei", "comedy", "romance"],
+    "melancholy": ["drama", "psychological", "slice of life", "iyashikei"],
+    "uplifting":  ["sports", "comedy", "adventure", "shounen"],
+    "depressing": ["drama", "psychological", "horror", "tragedy"],
+    "happy":      ["comedy", "slice of life", "iyashikei", "romance"],
+    "thriller":   ["suspense", "mystery", "psychological", "organized crime"],
+    "crime":      ["organized crime", "detective", "mystery", "seinen"],
+    "historical": ["historical", "samurai", "military", "drama"],
+    "school":     ["school", "comedy", "romance", "slice of life"],
+    "sports":     ["sports", "team sports", "combat sports", "drama"],
+    "music":      ["performing arts", "showbiz", "idols (female)", "drama"],
+    "cooking":    ["gourmet", "slice of life", "comedy"],
+    "game":       ["strategy game", "high stakes game", "video game", "psychological"],
+    "isekai":     ["isekai", "fantasy", "adventure", "reincarnation"],
+    "vampire":    ["vampire", "supernatural", "horror", "romance"],
+    "robot":      ["mecha", "sci-fi", "action", "military"],
+    "magic":      ["mahou shoujo", "fantasy", "supernatural", "mythology"],
 }
 
 

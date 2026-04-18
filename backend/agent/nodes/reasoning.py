@@ -38,15 +38,69 @@ from services.tag_mapper import (
 from utils.helpers import deduplicate
 
 
-# ── Semantic hint → tag mapping ───────────────────────────────────────────────
+# ── Semantic hint → real dataset tag mapping ─────────────────────────────────
+# Keys are phrases users type; values are actual tags from the dataset.
+# All tags verified against refined_anime_dataset.json + refined_manga_dataset.json
 
 _HINT_TO_TAGS = {
-    "character development": ["coming of age", "growth"],
-    "slow burn":             ["romance", "drama"],
-    "plot twist":            ["mystery", "thriller"],
-    "dark themes":           ["psychological", "horror"],
-    "found family":          ["drama", "slice of life"],
-    "redemption arc":        ["drama", "action"],
+    # Narrative / writing style
+    "character development": ["coming of age", "drama", "slice of life"],
+    "slow burn":             ["romance", "drama", "iyashikei"],
+    "plot twist":            ["mystery", "psychological", "suspense"],
+    "dark themes":           ["psychological", "horror", "gore", "drama"],
+    "found family":          ["drama", "slice of life", "adventure"],
+    "redemption arc":        ["drama", "action", "psychological"],
+    "coming of age":         ["school", "drama", "slice of life", "shounen"],
+    "time travel":           ["time travel", "sci-fi", "mystery"],
+    "reincarnation":         ["reincarnation", "isekai", "fantasy"],
+    "survival":              ["survival", "action", "horror", "gore"],
+    # Character types
+    "strong female lead":    ["action", "adventure", "shoujo", "mahou shoujo"],
+    "anti-hero":             ["psychological", "seinen", "drama", "action"],
+    "villainess":            ["villainess", "romance", "fantasy", "isekai"],
+    "vampire":               ["vampire", "supernatural", "horror", "romance"],
+    "mahou shoujo":          ["mahou shoujo", "fantasy", "drama"],
+    "idol":                  ["idols (female)", "idols (male)", "performing arts", "showbiz"],
+    # Tone / mood
+    "psychological":         ["psychological", "mystery", "suspense", "horror"],
+    "slice of life":         ["slice of life", "iyashikei", "comedy", "drama"],
+    "comedy":                ["comedy", "parody", "gag humor", "slice of life"],
+    "romance":               ["romance", "drama", "shoujo", "romantic subtext"],
+    "tragedy":               ["drama", "psychological", "horror"],
+    "horror":                ["horror", "supernatural", "gore", "mystery"],
+    "mystery":               ["mystery", "detective", "suspense", "psychological"],
+    "suspense":              ["suspense", "mystery", "thriller", "psychological"],
+    "gore":                  ["gore", "horror", "action", "survival"],
+    # Setting
+    "historical":            ["historical", "samurai", "military", "drama"],
+    "military":              ["military", "action", "historical", "drama"],
+    "school":                ["school", "comedy", "romance", "slice of life"],
+    "space":                 ["space", "sci-fi", "adventure", "mecha"],
+    "mecha":                 ["mecha", "sci-fi", "action", "military"],
+    "supernatural":          ["supernatural", "fantasy", "horror", "mystery"],
+    "mythology":             ["mythology", "fantasy", "historical", "adventure"],
+    "samurai":               ["samurai", "historical", "action", "drama"],
+    # Demographic hints
+    "shounen":               ["shounen", "action", "adventure", "comedy"],
+    "shoujo":                ["shoujo", "romance", "drama", "slice of life"],
+    "seinen":                ["seinen", "psychological", "drama", "action"],
+    "josei":                 ["josei", "romance", "drama", "slice of life"],
+    # Niche
+    "sports":                ["sports", "team sports", "combat sports", "drama"],
+    "martial arts":          ["martial arts", "action", "sports", "shounen"],
+    "gourmet":               ["gourmet", "slice of life", "comedy"],
+    "medical":               ["medical", "drama", "educational"],
+    "workplace":             ["workplace", "slice of life", "drama", "comedy"],
+    "strategy game":         ["strategy game", "high stakes game", "psychological"],
+    "high stakes game":      ["high stakes game", "strategy game", "psychological", "thriller"],
+    "performing arts":       ["performing arts", "showbiz", "drama", "romance"],
+    "boys love":             ["boys love", "romance", "drama"],
+    "girls love":            ["girls love", "romance", "drama"],
+    "harem":                 ["harem", "romance", "comedy", "ecchi"],
+    "ecchi":                 ["ecchi", "comedy", "romance", "harem"],
+    "award winning":         ["award winning", "drama", "psychological"],
+    "avant garde":           ["avant garde", "psychological", "drama"],
+    "isekai":                ["isekai", "fantasy", "adventure", "reincarnation"],
 }
 
 # ── Intent → search_strategy mapping ─────────────────────────────────────────

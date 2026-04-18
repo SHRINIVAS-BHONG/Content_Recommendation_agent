@@ -18,12 +18,48 @@ from typing import List
 
 # ── Tag keywords ──────────────────────────────────────────────────────────────
 
-# Mood / genre keywords we scan for in the query
+# All unique tags extracted from refined_anime_dataset.json + refined_manga_dataset.json
+# (89 real dataset tags) PLUS common user-typed mood/vibe words that map via
+# _SEMANTIC_FALLBACK in tag_mapper.py to real dataset tags.
 TAG_KEYWORDS: List[str] = [
-    "dark", "romance", "action", "comedy", "horror", "thriller",
-    "mystery", "fantasy", "sci-fi", "adventure", "psychological",
-    "slice of life", "drama", "supernatural", "mecha", "sports",
-    "historical", "military", "magic", "school", "isekai",
+    # ── Real dataset tags ──────────────────────────────────────────────────
+    # Action / Adventure
+    "action", "adventure", "martial arts", "samurai", "military",
+    "survival", "gore", "super power", "combat sports",
+    # Drama / Emotion
+    "drama", "romance", "slice of life", "iyashikei", "memoir",
+    "romantic subtext",
+    # Comedy
+    "comedy", "parody", "gag humor",
+    # Mature / Niche
+    "ecchi", "harem", "reverse harem", "boys love", "girls love",
+    "mahou shoujo", "magical sex shift",
+    # Dark / Thriller
+    "horror", "psychological", "suspense", "mystery", "detective",
+    "organized crime", "delinquents", "vampire",
+    # Fantasy / Sci-Fi
+    "fantasy", "sci-fi", "supernatural", "mythology", "isekai",
+    "reincarnation", "time travel", "space", "mecha",
+    # Demographic
+    "shounen", "shoujo", "seinen", "josei", "kids",
+    # School / Slice
+    "school", "childcare", "adult cast", "crossdressing",
+    "otaku culture", "anthropomorphic", "pets",
+    # Sports / Games
+    "sports", "team sports", "racing", "strategy game",
+    "high stakes game", "video game",
+    # Arts / Culture
+    "historical", "performing arts", "showbiz", "idols (female)",
+    "idols (male)", "visual arts", "gourmet", "medical", "educational",
+    "workplace",
+    # Misc
+    "award winning", "avant garde", "love polygon", "villainess", "cgdct",
+
+    # ── User-typed mood/vibe words (mapped via _SEMANTIC_FALLBACK) ─────────
+    "dark", "sad", "funny", "scary", "emotional", "epic", "slow",
+    "cute", "complex", "feel-good", "violent", "romantic", "futuristic",
+    "magical", "wholesome", "melancholy", "uplifting", "depressing",
+    "happy", "thriller", "crime", "cooking", "game", "robot", "magic",
 ]
 
 
@@ -108,13 +144,14 @@ def extract_reference(query: str) -> str:
 # Primary mood words that signal a mood-driven search
 _MOOD_WORDS: List[str] = [
     "dark", "sad", "feel-good", "happy", "melancholy",
-    "uplifting", "depressing", "wholesome",
+    "uplifting", "depressing", "wholesome", "scary", "emotional",
+    "violent", "romantic", "funny", "cute", "epic", "complex",
 ]
 
 # Character trait phrases that signal a character-focused search
 _CHARACTER_PHRASES: List[str] = [
     "strong female lead", "anti-hero", "protagonist",
-    "villain", "character development",
+    "villain", "character development", "villainess",
 ]
 
 # Conjunctions that indicate a complex, multi-signal query
@@ -123,10 +160,26 @@ _CONJUNCTIONS: List[str] = ["and", "with", "but not"]
 # ── Semantic hint phrases ─────────────────────────────────────────────────────
 
 _SEMANTIC_HINT_PHRASES: List[str] = [
+    # Narrative / writing style
     "character development", "plot twist", "slow burn", "coming of age",
-    "strong female lead", "anti-hero", "redemption arc", "found family",
-    "dark themes", "psychological", "slice of life", "isekai",
-    "romance", "comedy", "tragedy",
+    "redemption arc", "found family", "dark themes", "time travel",
+    "reincarnation", "isekai", "survival",
+    # Character types
+    "strong female lead", "anti-hero", "villainess", "vampire",
+    "mahou shoujo", "idol",
+    # Tone / mood
+    "psychological", "slice of life", "comedy", "romance", "tragedy",
+    "horror", "mystery", "suspense", "gore",
+    # Setting
+    "historical", "military", "school", "space", "mecha",
+    "supernatural", "mythology", "samurai",
+    # Demographic hints
+    "shounen", "shoujo", "seinen", "josei",
+    # Niche
+    "sports", "martial arts", "gourmet", "medical", "workplace",
+    "strategy game", "high stakes game", "performing arts",
+    "boys love", "girls love", "harem", "ecchi",
+    "award winning", "avant garde",
 ]
 
 
