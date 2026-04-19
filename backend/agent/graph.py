@@ -18,7 +18,7 @@ and a bounded refinement loop:
 
 Usage (from FastAPI or any entry point):
 
-    from agent.graph import run_agent
+    from backend.agent.graph import run_agent
 
     result = run_agent("dark anime like Attack on Titan")
     print(result["results"])
@@ -28,14 +28,14 @@ Usage (from FastAPI or any entry point):
 
 from langgraph.graph import StateGraph, END
 
-from agent.state import AgentState, initial_state
+from backend.agent.state import AgentState, initial_state
 from typing import Optional, Dict, Any, List
-from agent.nodes.process   import process_node
-from agent.nodes.reasoning import simple_reasoning_node, deep_reasoning_node
-from agent.nodes.recommend import recommend_node
-from agent.nodes.evaluator import evaluator_node
-from agent.nodes.refine    import refine_node
-from agent.nodes.output    import output_node
+from backend.agent.nodes.process   import process_node
+from backend.agent.nodes.reasoning import simple_reasoning_node, deep_reasoning_node
+from backend.agent.nodes.recommend import recommend_node
+from backend.agent.nodes.evaluator import evaluator_node
+from backend.agent.nodes.refine    import refine_node
+from backend.agent.nodes.output    import output_node
 
 # Build once at import time — graph structure never changes at runtime
 _compiled_graph = None

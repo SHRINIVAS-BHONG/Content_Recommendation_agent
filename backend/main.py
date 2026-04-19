@@ -22,7 +22,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
 
-from agent.graph import run_agent
+from backend.agent.graph import run_agent
 
 # ── App ────────────────────────────────────────────────────────────────────────
 
@@ -70,6 +70,32 @@ class RecommendationResponse(BaseModel):
 
 
 # ── Endpoints ──────────────────────────────────────────────────────────────────
+
+@app.get("/")
+def root():
+    """Root endpoint - Welcome message and API information."""
+    return {
+        "message": "🎌 Anime & Manga Recommendation API",
+        "description": "LangGraph-powered recommendation system with AI agent pipeline",
+        "version": "2.0.0",
+        "endpoints": {
+            "health": "/health",
+            "docs": "/docs",
+            "recommend": "POST /recommend"
+        },
+        "example_usage": {
+            "endpoint": "POST /recommend",
+            "body": {"query": "dark anime like Death Note"},
+            "description": "Get personalized anime/manga recommendations"
+        },
+        "features": [
+            "7-node AI agent pipeline",
+            "26,000+ anime & manga database", 
+            "Reasoning trace explanations",
+            "Automatic query refinement",
+            "Content-based filtering"
+        ]
+    }
 
 @app.post("/recommend", response_model=RecommendationResponse)
 def get_recommendations(body: QueryRequest):

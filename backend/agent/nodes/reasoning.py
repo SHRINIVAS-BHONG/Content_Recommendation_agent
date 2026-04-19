@@ -27,15 +27,15 @@ Updates: state["tags"], state["search_strategy"], state["reference_synopsis"],
 Uses: services/tag_mapper.py, utils/helpers.py
 """
 
-from agent.state import AgentState
-from services.tag_mapper import (
+from backend.agent.state import AgentState
+from backend.services.tag_mapper import (
     expand_tags,
     get_reference_tags,
     _load_dataset,
     _ANIME_PATH,
     _MANGA_PATH,
 )
-from utils.helpers import deduplicate
+from backend.utils.helpers import deduplicate
 
 
 # ── Semantic hint → real dataset tag mapping ─────────────────────────────────

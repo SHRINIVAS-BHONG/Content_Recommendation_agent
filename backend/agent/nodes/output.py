@@ -25,8 +25,8 @@ Output schema per result:
 """
 
 from typing import List, Dict, Any
-from agent.state import AgentState
-from utils.helpers import normalize_result
+from backend.agent.state import AgentState
+from backend.utils.helpers import normalize_result
 
 
 def output_node(state: AgentState) -> AgentState:

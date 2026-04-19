@@ -45,7 +45,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, List
 
-from agent.state import AgentState
+from backend.agent.state import AgentState
 
 # ── Model file paths ──────────────────────────────────────────────────────────
 _BASE_DIR = Path(__file__).resolve().parents[3]   # project root

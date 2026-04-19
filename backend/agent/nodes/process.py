@@ -16,8 +16,8 @@ Updates: state["tags"], state["type"], state["reference"],
 Uses: services/query_parser.py
 """
 
-from agent.state import AgentState
-from services.query_parser import (
+from backend.agent.state import AgentState
+from backend.services.query_parser import (
     extract_tags,
     detect_type,
     extract_reference,

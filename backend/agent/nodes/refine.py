@@ -25,8 +25,8 @@ Updates: state["tags"], state["search_strategy"], state["model_input"],
 Uses: utils/helpers.py (deduplicate), agent/state.py (AgentState)
 """
 
-from agent.state import AgentState
-from utils.helpers import deduplicate
+from backend.agent.state import AgentState
+from backend.utils.helpers import deduplicate
 
 
 def refine_node(state: AgentState) -> AgentState:

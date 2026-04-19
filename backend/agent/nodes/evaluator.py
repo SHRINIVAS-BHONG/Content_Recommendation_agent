@@ -14,8 +14,8 @@ Updates: state["quality_report"], state["reasoning_trace"]
 Uses: services/quality_evaluator.py
 """
 
-from agent.state import AgentState
-from services import quality_evaluator
+from backend.agent.state import AgentState
+from backend.services import quality_evaluator
 
 
 def evaluator_node(state: AgentState) -> AgentState:
