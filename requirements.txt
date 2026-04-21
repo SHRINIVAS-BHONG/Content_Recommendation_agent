@@ -6,6 +6,12 @@ uvicorn==0.44.0
 pydantic==2.12.5
 joblib==1.5.2
 
+# ML dependencies
+pandas==2.2.3
+numpy==2.2.3
+scikit-learn==1.6.1
+sentence-transformers==4.1.0
+
 # Authentication dependencies
 PyJWT==2.12.1
 cryptography==44.0.3

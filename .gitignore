@@ -1,15 +1,40 @@
-venv
-tests
-data
-*.json
-*.csv
-refining_anime.ipynb
-refining_manga.ipynb
-__pycache__
-.kiro
-.vscode
-.hypothesis
-.pytest_cache
-CODEBASE.md
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Virtual environment
+.venv/
+venv/
+
+# Environment variables
 .env
-.cursor
+
+# ML models (too large for Git, regenerate with scripts/train_model.py)
+*.pkl
+
+# Datasets (too large for Git)
+data/*.csv
+data/*.json
+data/*.ipynb
+
+# Keep data/ folder structure
+!data/.gitkeep
+
+# Zone.Identifier files (WSL artifacts)
+*:Zone.Identifier
+
+# IDE / Editor
+.vscode/
+.cursor/
+.kiro/
+
+# Testing
+.hypothesis/
+.pytest_cache/
+
+# Misc
+CODEBASE.md
