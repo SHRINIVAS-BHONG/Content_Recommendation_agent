@@ -249,36 +249,27 @@ def compute_complexity_score(query: str) -> float:
 
     Scoring heuristic:
         Base score: 0.0
+        +0.5  if a "like <Title>" reference is present  ← always deep reasoning
         +0.3  if word count > 8
-        +0.2  if a "like <Title>" reference is present
         +0.2  if any semantic hint phrases are detected
         +0.3  if multiple genre/mood terms combined with conjunctions
 
     The result is clamped to [0.0, 1.0].
 
-    Example:
-        compute_complexity_score("dark anime") → 0.0
-        compute_complexity_score("dark romance anime like Vampire Knight with "
-                                 "strong character development and plot twists")
-        → 1.0 (clamped)
-
-    Args:
-        query: Raw user input string.
-
-    Returns:
-        Float in [0.0, 1.0].
+    "like X" queries always score >= 0.5 so they route to deep_reasoning_node,
+    which performs reference synopsis lookup and uses the "reference" strategy.
     """
     query_lower = query.lower()
     score = 0.0
+
+    # +0.5 if reference present ("like <something>") — forces deep reasoning
+    if re.search(r'\blike\s+\S', query_lower):
+        score += 0.5
 
     # +0.3 if word count > 8
     word_count = len(query.split())
     if word_count > 8:
         score += 0.3
-
-    # +0.2 if reference present ("like <something>")
-    if re.search(r'\blike\s+\S', query_lower):
-        score += 0.2
 
     # +0.2 if semantic hint phrases detected
     hints = extract_semantic_hints(query)

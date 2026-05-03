@@ -1,0 +1,305 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   App.css — Root layout and nav bar
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Navigation bar ────────────────────────────────────────────────────── */
+.nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 5%;
+  background: rgba(7, 7, 15, 0.7);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--glass-border);
+  transition: all 0.3s var(--ease-out-expo);
+}
+
+.nav__brand {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nav__brand .gradient-text {
+  background: linear-gradient(135deg, var(--accent-orange-light), var(--accent-amber), var(--accent-red-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 8px rgba(244, 117, 33, 0.4));
+}
+
+.nav__brand-icon {
+  font-size: 1.5rem;
+}
+
+.nav__brand-logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(244, 117, 33, 0.4);
+  box-shadow: 0 0 10px rgba(244, 117, 33, 0.3);
+}
+
+.nav__links {
+  display: flex;
+  gap: 32px;
+  list-style: none;
+}
+
+.nav__link {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color 0.3s;
+  background: none;
+  border: none;
+  font-family: var(--font-body);
+}
+.nav__link:hover {
+  color: var(--text-primary);
+}
+
+.nav__status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.nav__status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transition: background 0.3s;
+}
+.nav__status-dot--online {
+  background: var(--accent-green);
+  box-shadow: 0 0 8px var(--accent-green);
+}
+
+/* ── Global fixed background layer ────────────────────────────────────── */
+/* position: fixed so it stays put while the user scrolls                  */
+.app-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Ambient radial glows */
+.app-bg__glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.18;
+}
+.app-bg__glow--1 {
+  width: 700px; height: 700px;
+  top: -200px; left: -150px;
+  background: radial-gradient(circle, rgba(244,117,33,0.9), transparent 70%);
+  animation: glowDrift1 18s ease-in-out infinite;
+}
+.app-bg__glow--2 {
+  width: 500px; height: 500px;
+  top: 40%; right: -100px;
+  background: radial-gradient(circle, rgba(229,62,62,0.8), transparent 70%);
+  animation: glowDrift2 22s ease-in-out infinite;
+}
+.app-bg__glow--3 {
+  width: 600px; height: 600px;
+  bottom: -150px; left: 30%;
+  background: radial-gradient(circle, rgba(245,158,11,0.7), transparent 70%);
+  animation: glowDrift3 26s ease-in-out infinite;
+}
+@keyframes glowDrift1 {
+  0%,100% { transform: translate(0,0); }
+  33%     { transform: translate(60px,-80px); }
+  66%     { transform: translate(-40px,50px); }
+}
+@keyframes glowDrift2 {
+  0%,100% { transform: translate(0,0); }
+  50%     { transform: translate(-80px,60px); }
+}
+@keyframes glowDrift3 {
+  0%,100% { transform: translate(0,0); }
+  40%     { transform: translate(50px,-40px); }
+  80%     { transform: translate(-30px,70px); }
+}
+
+/* Halftone dot grid */
+.app-bg__halftone {
+  position: absolute;
+  inset: 0;
+  opacity: 0.022;
+  background-image: radial-gradient(circle, rgba(244,117,33,0.9) 1px, transparent 1px);
+  background-size: 30px 30px;
+}
+
+/* Speed lines */
+.app-bg__speed-lines {
+  position: absolute;
+  inset: 0;
+  opacity: 0.03;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 55px,
+    rgba(244,117,33,0.9) 55px,
+    rgba(244,117,33,0.9) 56px
+  );
+  animation: speedScroll 12s linear infinite;
+}
+@keyframes speedScroll {
+  from { background-position-x: 0; }
+  to   { background-position-x: 112px; }
+}
+
+/* Floating kanji */
+.app-bg__kanji {
+  position: absolute;
+  font-family: var(--font-display);
+  font-weight: 900;
+  color: rgba(244,117,33,0.055);
+  pointer-events: none;
+  user-select: none;
+  animation: kanjiDrift 14s ease-in-out infinite;
+}
+.app-bg__kanji--1 { font-size: 16rem; top:  -3%; left:  -2%; animation-duration: 16s; animation-delay: 0s; }
+.app-bg__kanji--2 { font-size: 10rem; top:  20%; right:  2%; animation-duration: 20s; animation-delay: 2s; }
+.app-bg__kanji--3 { font-size: 12rem; top:  50%; left:  -1%; animation-duration: 18s; animation-delay: 5s; }
+.app-bg__kanji--4 { font-size:  8rem; top:  70%; right:  5%; animation-duration: 22s; animation-delay: 1s; }
+.app-bg__kanji--5 { font-size: 14rem; bottom:-2%; left:  35%; animation-duration: 24s; animation-delay: 3s; }
+.app-bg__kanji--6 { font-size:  9rem; top:  35%; left:  45%; animation-duration: 19s; animation-delay: 7s; }
+.app-bg__kanji--7 { font-size: 11rem; top:  80%; left:  15%; animation-duration: 21s; animation-delay: 4s; }
+.app-bg__kanji--8 { font-size:  7rem; top:  10%; left:  60%; animation-duration: 17s; animation-delay: 6s; }
+
+@keyframes kanjiDrift {
+  0%,100% { transform: translate(0,0) rotate(0deg);    opacity: 0.055; }
+  33%     { transform: translate(12px,-18px) rotate(2deg);  opacity: 0.035; }
+  66%     { transform: translate(-8px,12px) rotate(-1deg); opacity: 0.07; }
+}
+
+/* Ember particles */
+.app-bg__particle {
+  position: absolute;
+  border-radius: 50%;
+  animation: emberFloat 8s ease-in-out infinite;
+}
+.app-bg__particle:nth-child(1)  { width:3px;height:3px; background:var(--accent-orange);       top:8%;  left:12%; animation-delay:0s;   animation-duration:7s; }
+.app-bg__particle:nth-child(2)  { width:2px;height:2px; background:var(--accent-amber);        top:22%; left:55%; animation-delay:1s;   animation-duration:9s; }
+.app-bg__particle:nth-child(3)  { width:4px;height:4px; background:var(--accent-red);          top:45%; left:30%; animation-delay:2s;   animation-duration:6s; }
+.app-bg__particle:nth-child(4)  { width:2px;height:2px; background:var(--accent-amber-light);  top:65%; left:70%; animation-delay:0.5s; animation-duration:10s; }
+.app-bg__particle:nth-child(5)  { width:3px;height:3px; background:var(--accent-orange-light); top:80%; left:18%; animation-delay:3s;   animation-duration:8s; }
+.app-bg__particle:nth-child(6)  { width:4px;height:4px; background:var(--accent-yellow);       top:15%; left:78%; animation-delay:1.5s; animation-duration:7s; }
+.app-bg__particle:nth-child(7)  { width:2px;height:2px; background:var(--accent-red-light);    top:55%; left:8%;  animation-delay:4s;   animation-duration:9s; }
+.app-bg__particle:nth-child(8)  { width:3px;height:3px; background:var(--accent-orange);       top:38%; left:88%; animation-delay:2.5s; animation-duration:7.5s; }
+.app-bg__particle:nth-child(9)  { width:2px;height:2px; background:var(--accent-yellow);       top:92%; left:42%; animation-delay:0.8s; animation-duration:6.5s; }
+.app-bg__particle:nth-child(10) { width:3px;height:3px; background:var(--accent-amber);        top:28%; left:22%; animation-delay:3.5s; animation-duration:8.5s; }
+.app-bg__particle:nth-child(11) { width:4px;height:4px; background:var(--accent-orange);       top:72%; left:50%; animation-delay:1.2s; animation-duration:7.2s; }
+.app-bg__particle:nth-child(12) { width:2px;height:2px; background:var(--accent-red);          top:5%;  left:40%; animation-delay:5s;   animation-duration:9.5s; }
+.app-bg__particle:nth-child(13) { width:3px;height:3px; background:var(--accent-amber-light);  top:48%; left:62%; animation-delay:2.8s; animation-duration:8s; }
+.app-bg__particle:nth-child(14) { width:2px;height:2px; background:var(--accent-orange-light); top:85%; left:82%; animation-delay:0.3s; animation-duration:6.8s; }
+.app-bg__particle:nth-child(15) { width:4px;height:4px; background:var(--accent-yellow);       top:32%; left:95%; animation-delay:4.2s; animation-duration:7.8s; }
+.app-bg__particle:nth-child(16) { width:3px;height:3px; background:var(--accent-red-light);    top:60%; left:3%;  animation-delay:1.8s; animation-duration:9.2s; }
+
+@keyframes emberFloat {
+  0%,100% { transform: translate(0,0) scale(1);   opacity:0.5; }
+  50%     { transform: translate(18px,-28px) scale(1.6); opacity:1; }
+}
+
+/* Corner arcs */
+.app-bg__arc {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.app-bg__arc--tl {
+  width: 600px; height: 600px;
+  top: -300px; left: -300px;
+  border: 1px solid rgba(244,117,33,0.10);
+  box-shadow: inset 0 0 80px rgba(244,117,33,0.04);
+  animation: arcPulse 10s ease-in-out infinite;
+}
+.app-bg__arc--br {
+  width: 500px; height: 500px;
+  bottom: -250px; right: -250px;
+  border: 1px solid rgba(229,62,62,0.08);
+  box-shadow: inset 0 0 60px rgba(229,62,62,0.03);
+  animation: arcPulse 13s ease-in-out infinite reverse;
+}
+.app-bg__arc--tr {
+  width: 350px; height: 350px;
+  top: 30%; right: -175px;
+  border: 1px solid rgba(245,158,11,0.07);
+  animation: arcPulse 16s ease-in-out infinite;
+  animation-delay: 4s;
+}
+@keyframes arcPulse {
+  0%,100% { transform: scale(1);    opacity:1; }
+  50%     { transform: scale(1.06); opacity:0.5; }
+}
+
+/* Make sure all page content sits above the fixed bg */
+nav, section, .app-diagonal, .app-diagonal--reverse, .app-divider {
+  position: relative;
+  z-index: 1;
+}
+
+
+.app-divider {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--accent-orange) 30%,
+    var(--accent-amber) 70%,
+    transparent
+  );
+  opacity: 0.35;
+  position: relative;
+  z-index: 1;
+}
+
+.app-diagonal {
+  width: 100%;
+  height: 60px;
+  position: relative;
+  z-index: 1;
+  background: linear-gradient(
+    175deg,
+    transparent 49%,
+    rgba(244, 117, 33, 0.12) 49%,
+    rgba(244, 117, 33, 0.12) 51%,
+    transparent 51%
+  );
+}
+
+.app-diagonal--reverse {
+  background: linear-gradient(
+    175deg,
+    transparent 49%,
+    rgba(245, 158, 11, 0.10) 49%,
+    rgba(245, 158, 11, 0.10) 51%,
+    transparent 51%
+  );
+}
+
+/* ── Responsive nav ────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .nav__links { display: none; }
+}

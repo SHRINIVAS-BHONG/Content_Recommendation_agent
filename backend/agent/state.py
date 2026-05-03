@@ -55,6 +55,9 @@ class AgentState(TypedDict):
     refinement_count: int        # 0, 1, or 2 — guards against infinite loops
     quality_report: Dict         # {coverage, diversity, avg_score, verdict, uncovered_tags}
 
+    # ── Pagination ────────────────────────────────────────────────────────
+    page: int                    # 0-indexed page for Load More
+
     # ── New: Explainability ───────────────────────────────────────────────
     reasoning_trace: List[str]   # human-readable log of decisions made
 
@@ -69,6 +72,7 @@ class AgentState(TypedDict):
 
 def initial_state(
     query: str,
+    page: int = 0,
     user_id: Optional[str] = None,
     user_preferences: Optional[Dict[str, Any]] = None,
     conversation_context: Optional[Dict[str, Any]] = None,
@@ -80,6 +84,7 @@ def initial_state(
 
     Args:
         query: The raw user input string.
+        page: 0-indexed page number for Load More pagination.
         user_id: Optional user UUID string. When provided the state is
                  initialised in authenticated mode.
         user_preferences: Optional dict with preferred_genres, avoided_genres,
@@ -124,6 +129,8 @@ def initial_state(
         # refinement loop
         refinement_count=0,
         quality_report={},
+        # pagination
+        page=page,
         # explainability
         reasoning_trace=[],
         # user context

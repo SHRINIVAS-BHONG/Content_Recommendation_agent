@@ -138,6 +138,7 @@ def _get_graph():
 
 def run_agent(
     query: str,
+    page: int = 0,
     user_id: Optional[str] = None,
     user_preferences: Optional[Dict[str, Any]] = None,
     conversation_context: Optional[Dict[str, Any]] = None,
@@ -151,6 +152,7 @@ def run_agent(
 
     Args:
         query: Raw user input string (e.g. "dark anime like Death Note").
+        page: 0-indexed page number for Load More pagination.
         user_id: Optional authenticated user UUID string.
         user_preferences: Optional dict with preferred/avoided genres and
                           content type preferences.
@@ -176,6 +178,7 @@ def run_agent(
     graph  = _get_graph()
     state  = initial_state(
         query=query,
+        page=page,
         user_id=user_id,
         user_preferences=user_preferences,
         conversation_context=conversation_context,

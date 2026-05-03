@@ -1,0 +1,209 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   ResultCard — Glassmorphism anime/manga recommendation card
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.result-card {
+  position: relative;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(16px);
+  transition: all 0.4s var(--ease-out-expo);
+  cursor: default;
+  animation: cardSlideUp 0.6s var(--ease-out-expo) backwards;
+}
+
+/* Shimmer sweep on hover */
+.result-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgba(244, 117, 33, 0.06) 50%,
+    transparent 60%
+  );
+  transform: translateX(-100%);
+  transition: transform 0s;
+  pointer-events: none;
+}
+.result-card:hover::after {
+  transform: translateX(100%);
+  transition: transform 0.6s var(--ease-out-expo);
+}
+
+.result-card:hover {
+  border-color: var(--accent-orange);
+  transform: translateY(-6px);
+  box-shadow: var(--glow-orange);
+}
+
+@keyframes cardSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+}
+
+/* ── Image area ────────────────────────────────────────────────────────── */
+.result-card__image-wrap {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+  background: var(--bg-tertiary);
+}
+
+.result-card__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s var(--ease-out-expo);
+}
+
+.result-card:hover .result-card__image {
+  transform: scale(1.05);
+}
+
+.result-card__image-gradient {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60%;
+  background: linear-gradient(transparent, var(--bg-primary));
+  pointer-events: none;
+}
+
+.result-card__score {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 4px 12px;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 700;
+  border-radius: var(--radius-full);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: var(--accent-gold);
+}
+
+.result-card__similarity {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  padding: 4px 10px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  border-radius: var(--radius-full);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(244, 117, 33, 0.4);
+  color: var(--accent-orange-light);
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+.result-card__body {
+  padding: 20px;
+}
+
+.result-card__title {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.result-card__genres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 12px;
+}
+
+.result-card__genre-pill {
+  padding: 3px 10px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  border-radius: var(--radius-full);
+  background: rgba(244, 117, 33, 0.10);
+  color: var(--accent-orange-light);
+  border: 1px solid rgba(244, 117, 33, 0.20);
+}
+
+.result-card__synopsis-wrap {
+  margin-bottom: 14px;
+}
+
+.result-card__synopsis {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 6px;
+}
+
+.result-card__expand-btn {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--accent-orange-light);
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: color 0.2s;
+  letter-spacing: 0.02em;
+}
+.result-card__expand-btn:hover {
+  color: var(--accent-amber-light);
+}
+
+.result-card__match {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-style: italic;
+  padding-top: 12px;
+  border-top: 1px solid var(--glass-border);
+}
+
+.result-card__why-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 6px 14px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: var(--radius-full);
+  background: rgba(244, 117, 33, 0.08);
+  color: var(--accent-orange-light);
+  border: 1px solid rgba(244, 117, 33, 0.22);
+  cursor: pointer;
+  transition: all 0.3s var(--ease-out-expo);
+}
+.result-card__why-btn:hover {
+  background: rgba(244, 117, 33, 0.16);
+  border-color: var(--accent-orange);
+  box-shadow: var(--glow-orange);
+}
+
+/* Placeholder when no image */
+.result-card__no-image {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-card));
+  font-size: 3rem;
+}

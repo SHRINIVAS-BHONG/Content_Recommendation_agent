@@ -1,0 +1,166 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   PipelineStory — Animated 7-node agent timeline
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.pipeline {
+  background: transparent;
+  padding: 100px 5%;
+  position: relative;
+  overflow: hidden;
+}
+
+.pipeline__header {
+  text-align: center;
+  max-width: 700px;
+  margin: 0 auto 80px;
+}
+
+/* ── Timeline container ────────────────────────────────────────────────── */
+.pipeline__timeline {
+  position: relative;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* Vertical connector line */
+.pipeline__line {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    var(--accent-orange) 10%,
+    var(--accent-amber) 50%,
+    var(--accent-red) 90%,
+    transparent 100%
+  );
+  transform: translateX(-50%);
+  opacity: 0.5;
+}
+
+/* ── Individual node ───────────────────────────────────────────────────── */
+.pipeline__node {
+  display: flex;
+  align-items: center;
+  margin-bottom: 50px;
+  position: relative;
+}
+
+.pipeline__node:nth-child(odd) {
+  flex-direction: row;
+}
+.pipeline__node:nth-child(even) {
+  flex-direction: row-reverse;
+}
+
+/* Center dot on the timeline */
+.pipeline__dot {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 3px solid var(--accent-violet);
+  background: transparent;
+  z-index: 2;
+  transition: all 0.5s var(--ease-out-expo);
+}
+
+.pipeline__node.visible .pipeline__dot {
+  background: var(--accent-orange);
+  box-shadow: 0 0 20px rgba(244, 117, 33, 0.6), 0 0 40px rgba(244, 117, 33, 0.2);
+}
+
+.pipeline__node:nth-child(2) .pipeline__dot,
+.pipeline__node:nth-child(2).visible .pipeline__dot { border-color: var(--accent-amber); }
+.pipeline__node:nth-child(2).visible .pipeline__dot { background: var(--accent-amber); box-shadow: var(--glow-amber); }
+
+.pipeline__node:nth-child(3) .pipeline__dot,
+.pipeline__node:nth-child(3).visible .pipeline__dot { border-color: var(--accent-amber); }
+.pipeline__node:nth-child(3).visible .pipeline__dot { background: var(--accent-amber); box-shadow: var(--glow-amber); }
+
+.pipeline__node:nth-child(4) .pipeline__dot,
+.pipeline__node:nth-child(4).visible .pipeline__dot { border-color: var(--accent-red); }
+.pipeline__node:nth-child(4).visible .pipeline__dot { background: var(--accent-red); box-shadow: var(--glow-red); }
+
+.pipeline__node:nth-child(5) .pipeline__dot,
+.pipeline__node:nth-child(5).visible .pipeline__dot { border-color: var(--accent-amber); }
+.pipeline__node:nth-child(5).visible .pipeline__dot { background: var(--accent-amber); box-shadow: var(--glow-amber); }
+
+.pipeline__node:nth-child(6) .pipeline__dot,
+.pipeline__node:nth-child(6).visible .pipeline__dot { border-color: var(--accent-red); }
+.pipeline__node:nth-child(6).visible .pipeline__dot { background: var(--accent-red); box-shadow: var(--glow-red); }
+
+/* ── Card content ──────────────────────────────────────────────────────── */
+.pipeline__card {
+  width: calc(50% - 60px);
+  padding: 28px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(16px);
+  opacity: 0;
+  transform: translateX(-30px);
+  transition: all 0.7s var(--ease-out-expo);
+}
+
+.pipeline__node:nth-child(even) .pipeline__card {
+  transform: translateX(30px);
+}
+
+.pipeline__node.visible .pipeline__card {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.pipeline__node.visible .pipeline__card:hover {
+  border-color: var(--glass-border-hover);
+  background: var(--glass-bg-hover);
+}
+
+.pipeline__icon {
+  font-size: 1.8rem;
+  margin-bottom: 12px;
+  display: block;
+}
+
+.pipeline__card-title {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.pipeline__card-node {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--accent-orange-light);
+  margin-bottom: 10px;
+  opacity: 0.8;
+}
+
+.pipeline__card-desc {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .pipeline__line { left: 24px; }
+  .pipeline__dot  { left: 24px; }
+  .pipeline__node,
+  .pipeline__node:nth-child(even) { flex-direction: row; }
+  .pipeline__card {
+    width: calc(100% - 60px);
+    margin-left: 50px;
+    transform: translateX(-20px);
+  }
+  .pipeline__node:nth-child(even) .pipeline__card {
+    transform: translateX(-20px);
+  }
+}

@@ -1,0 +1,178 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   MemorySection — "Learns Your Taste" showcase
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.memory {
+  padding: 100px 5%;
+  background: transparent;
+  position: relative;
+  overflow: hidden;
+}
+
+.memory__content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ── Left: text ────────────────────────────────────────────────────────── */
+.memory__text { max-width: 500px; }
+
+.memory__features {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-top: 36px;
+}
+
+.memory__feature {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.memory__feature-icon {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  background: rgba(244, 117, 33, 0.10);
+  border: 1px solid rgba(244, 117, 33, 0.20);
+}
+
+.memory__feature-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1rem;
+  margin-bottom: 4px;
+}
+
+.memory__feature-desc {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* ── Right: animated visualization ─────────────────────────────────────── */
+.memory__visual {
+  position: relative;
+  height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.memory__bubble-container {
+  position: relative;
+  width: 320px;
+  height: 320px;
+}
+
+.memory__bubble {
+  position: absolute;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 8px 16px;
+  white-space: nowrap;
+  border: 1px solid;
+  animation: bubbleFloat 6s ease-in-out infinite;
+}
+
+.memory__bubble--1 {
+  top: 10%; left: 15%;
+  background: rgba(244, 117, 33, 0.12);
+  color: var(--accent-orange-light);
+  border-color: rgba(244, 117, 33, 0.25);
+  animation-delay: 0s;
+}
+.memory__bubble--2 {
+  top: 5%; right: 15%;
+  background: rgba(245, 158, 11, 0.12);
+  color: var(--accent-amber);
+  border-color: rgba(245, 158, 11, 0.25);
+  animation-delay: 1s;
+}
+.memory__bubble--3 {
+  top: 35%; left: 5%;
+  background: rgba(229, 62, 62, 0.12);
+  color: var(--accent-red-light);
+  border-color: rgba(229, 62, 62, 0.25);
+  animation-delay: 0.5s;
+}
+.memory__bubble--4 {
+  top: 40%; right: 5%;
+  background: rgba(253, 224, 71, 0.12);
+  color: var(--accent-yellow);
+  border-color: rgba(253, 224, 71, 0.25);
+  animation-delay: 1.5s;
+}
+.memory__bubble--5 {
+  bottom: 25%; left: 20%;
+  background: rgba(34, 197, 94, 0.12);
+  color: var(--accent-green);
+  border-color: rgba(34, 197, 94, 0.25);
+  animation-delay: 2s;
+}
+.memory__bubble--6 {
+  bottom: 15%; right: 20%;
+  background: rgba(244, 117, 33, 0.12);
+  color: var(--accent-orange-light);
+  border-color: rgba(244, 117, 33, 0.25);
+  animation-delay: 0.8s;
+}
+.memory__bubble--7 {
+  bottom: 5%; left: 40%;
+  background: rgba(245, 158, 11, 0.12);
+  color: var(--accent-amber);
+  border-color: rgba(245, 158, 11, 0.25);
+  animation-delay: 2.5s;
+}
+
+@keyframes bubbleFloat {
+  0%, 100% { transform: translate(0, 0); }
+  33% { transform: translate(8px, -12px); }
+  66% { transform: translate(-6px, 8px); }
+}
+
+/* Center brain icon */
+.memory__brain {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.2rem;
+  background: rgba(244, 117, 33, 0.08);
+  border: 2px solid rgba(244, 117, 33, 0.25);
+  box-shadow: var(--glow-orange);
+  animation: brainPulse 3s ease-in-out infinite;
+}
+
+@keyframes brainPulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(244, 117, 33, 0.2); }
+  50% { box-shadow: 0 0 40px rgba(244, 117, 33, 0.4), 0 0 80px rgba(244, 117, 33, 0.1); }
+}
+
+@media (max-width: 768px) {
+  .memory__content { grid-template-columns: 1fr; }
+  .memory__visual { height: 300px; }
+  .memory__bubble-container { width: 280px; height: 280px; }
+}

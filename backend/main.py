@@ -16,9 +16,12 @@ The response includes:
   - results          : ranked recommendation items (with optional similarity_score / match_reason)
   - reasoning_trace  : list of human-readable strings explaining each decision made by the agent
   - refinement_count : number of quality-evaluation refinement cycles that occurred (0–2)
+  - page             : the page number returned (0-indexed)
+  - has_more         : whether more results are available on the next page
 """
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 
@@ -37,17 +40,25 @@ app = FastAPI(
     version="2.0.0",
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 # ── Request / Response schemas ─────────────────────────────────────────────────
 
 class QueryRequest(BaseModel):
     query: str
+    page: int = 0   # 0-indexed page number for Load More
 
     model_config = {
         "json_schema_extra": {
             "examples": [
-                {"query": "dark anime like Attack on Titan"},
-                {"query": "romance manga like Fruits Basket"},
+                {"query": "dark anime like Attack on Titan", "page": 0},
+                {"query": "romance manga like Fruits Basket", "page": 1},
             ]
         }
     }
@@ -67,6 +78,8 @@ class RecommendationResponse(BaseModel):
     results:          List[RecommendationItem]
     reasoning_trace:  List[str]
     refinement_count: int
+    page:             int
+    has_more:         bool
 
 
 # ── Endpoints ──────────────────────────────────────────────────────────────────
@@ -90,44 +103,34 @@ def root():
         },
         "features": [
             "7-node AI agent pipeline",
-            "26,000+ anime & manga database", 
+            "26,000+ anime & manga database",
             "Reasoning trace explanations",
             "Automatic query refinement",
-            "Content-based filtering"
+            "Content-based filtering",
+            "Paginated Load More support",
         ]
     }
+
 
 @app.post("/recommend", response_model=RecommendationResponse)
 def get_recommendations(body: QueryRequest):
     """
     Run the full agent pipeline on a user query.
 
-    The pipeline:
-      1. process        — parse query into tags, type, reference, intent,
-                          complexity_score, and semantic_hints
-      2. routing        — route to simple_reasoning_node (complexity < 0.5)
-                          or deep_reasoning_node (complexity >= 0.5)
-      3. reasoning      — expand tags, build enriched model_input payload
-      4. recommend      — call pre-trained .pkl model with enriched data
-      5. evaluator      — assess coverage, diversity, and avg_score
-      6. refine (0–2×)  — adjust model_input and retry if quality is low
-      7. output         — normalise results to frontend schema
+    Supports pagination via the `page` field (0-indexed). Page 0 runs the
+    full agent pipeline; subsequent pages re-run with the page offset so
+    the model returns the next batch of 10 deduplicated results.
 
     Request:
-        { "query": "dark anime like Death Note" }
+        { "query": "dark anime like Death Note", "page": 0 }
 
     Response:
         {
-          "results": [
-            {
-              "title": "...", "image": "...", "synopsis": "...",
-              "score": 9.1, "genres": ["..."],
-              "similarity_score": 0.87,   // optional, present when model provides it
-              "match_reason": "..."        // optional, present when model provides it
-            }
-          ],
-          "reasoning_trace":  ["Step 1: ...", "Step 2: ..."],
-          "refinement_count": 0
+          "results": [...],           // 10 items for this page
+          "reasoning_trace": [...],
+          "refinement_count": 0,
+          "page": 0,
+          "has_more": true            // false when no more results exist
         }
 
     Errors:
@@ -139,11 +142,14 @@ def get_recommendations(body: QueryRequest):
         raise HTTPException(status_code=400, detail="Query cannot be empty.")
 
     try:
-        output = run_agent(query=body.query)
+        output = run_agent(query=body.query, page=body.page)
+        results = output.get("results", [])
         return RecommendationResponse(
-            results=output.get("results", []),
+            results=results,
             reasoning_trace=output.get("reasoning_trace", []),
             refinement_count=output.get("refinement_count", 0),
+            page=body.page,
+            has_more=len(results) == 10,  # if we got a full page, assume more exist
         )
 
     except FileNotFoundError as exc:

@@ -24,7 +24,7 @@ from typing import Dict, List
 
 # ── Dataset paths ─────────────────────────────────────────────────────────────
 # Walks up from this file:  services/ → agent/ → backend/ → project_root/
-_BASE_DIR   = Path(__file__).resolve().parents[3]   # project root
+_BASE_DIR   = Path(__file__).resolve().parents[2]   # project root
 _ANIME_PATH = _BASE_DIR / "data" / "refined_anime_dataset.json"
 _MANGA_PATH = _BASE_DIR / "data" / "refined_manga_dataset.json"
 

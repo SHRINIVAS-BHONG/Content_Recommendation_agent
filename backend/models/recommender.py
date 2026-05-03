@@ -7,22 +7,25 @@ Combines three signals for scoring:
     3. Popularity Bias      — Normalized community rating
 
 Scoring formula (default "hybrid" strategy):
-    final = 0.6 × semantic + 0.3 × tag_jaccard + 0.1 × popularity
+    final = 0.5 × semantic + 0.3 × tag_jaccard + 0.2 × popularity
 
 The weights shift depending on search_strategy:
-    "reference"  → heavier on semantic (0.7)
-    "tag_only"   → heavier on Jaccard  (0.6)
-    "semantic"   → almost all semantic  (0.8)
-    "hybrid"     → balanced default     (0.6 / 0.3 / 0.1)
+    "reference"  → heavier on semantic (0.65)
+    "tag_only"   → heavier on Jaccard  (0.55)
+    "semantic"   → almost all semantic  (0.70)
+    "hybrid"     → balanced default     (0.50 / 0.30 / 0.20)
+
+Popularity weight is 0.20 (up from 0.10) so well-known, highly-rated titles
+surface more reliably alongside thematic matches.
 
 Contract (required by backend/agent/nodes/recommend.py):
     model.recommend(input_data: dict) -> list[dict]
 """
 
+import re
 import ast
 import numpy as np
 import pandas as pd
-from sklearn.metrics.pairwise import cosine_similarity
 
 
 class ZestyRecommender:
@@ -38,7 +41,8 @@ class ZestyRecommender:
     Query-time (in recommend()):
         - Computes semantic, Jaccard, and popularity scores
         - Blends them with strategy-dependent weights
-        - Returns top-N results with match reasons
+        - Deduplicates by franchise (strips season/OVA/Specials suffixes)
+        - Returns top-10 results with match reasons
     """
 
     def __init__(self, data_list, model_name="all-MiniLM-L6-v2"):
@@ -116,7 +120,6 @@ class ZestyRecommender:
         """Lazy-load SentenceTransformer at query time (not stored in .pkl)."""
         if self._encoder is None:
             from sentence_transformers import SentenceTransformer
-
             self._encoder = SentenceTransformer(self.model_name)
         return self._encoder
 
@@ -131,6 +134,65 @@ class ZestyRecommender:
         union = len(set_a | set_b)
         return intersection / union if union > 0 else 0.0
 
+    # ── Base-title deduplication helper ──────────────────────────────────
+
+    # Compiled once at class level for efficiency
+    _SUFFIX_RE = re.compile(
+        r"\s*[\(\[]?("
+        r"season\s*\d*|s\d+|part\s*\d+|cour\s*\d+|"
+        r"\d+(?:st|nd|rd|th)\s+season|"
+        r"\bii\b|\biii\b|\biv\b|\bv\b|\bvi\b|\bvii\b|\bviii\b|"
+        r"specials?|ova|ona|"
+        r"movie\s*\d*|film\s*\d*|the\s+movie|"
+        r"final\s+(?:season|arc|chapter)|"
+        r"rewrite|re-cut|recap s?|recaps?"
+        r")[\)\]]?$",
+        re.IGNORECASE,
+    )
+
+    @classmethod
+    def _base_title(cls, title: str) -> str:
+        """
+        Reduce a title to its franchise root for deduplication.
+
+        Strategy (applied in order):
+          1. Strip trailing season/part/OVA/movie/specials markers.
+          2. Strip ": subtitle" colon-subtitles (word-colon-space pattern).
+             Titles where the colon is mid-word (Re:Zero, Steins;Gate) are
+             unaffected because they have no space after the colon's word.
+          3. Strip trailing markers again — second pass catches "Movie 1" that
+             was hidden behind a colon subtitle in step 1.
+          4. Lowercase.
+
+        Examples:
+            'Trinity Seven Movie 1: Eternity Library'  -> 'trinity seven'
+            'Sword Art Online Movie: Ordinal Scale'    -> 'sword art online'
+            'One Piece Film: Red'                      -> 'one piece'
+            'Shingeki no Kyojin: The Final Season'     -> 'shingeki no kyojin'
+            'Re:Zero kara Hajimeru Isekai Seikatsu'    -> 're:zero kara hajimeru isekai seikatsu'
+            'Steins;Gate'                              -> 'steins;gate'
+            'Death Note Rewrite'                       -> 'death note'
+        """
+        t = title.strip()
+
+        # Pass 1 — strip trailing suffix markers
+        prev = None
+        while prev != t:
+            prev = t
+            t = cls._SUFFIX_RE.sub("", t).strip()
+
+        # Strip ": subtitle" — only when colon has a space before it
+        # (preserves "Re:Zero", "Steins;Gate" where colon is mid-word)
+        t = re.sub(r":\s+\S.*$", "", t).strip()
+
+        # Pass 2 — strip again after colon removal (catches "Movie 1" etc.)
+        prev = None
+        while prev != t:
+            prev = t
+            t = cls._SUFFIX_RE.sub("", t).strip()
+
+        return t.lower()
+
     # ── Main recommendation method ────────────────────────────────────────
 
     def recommend(self, input_data):
@@ -141,10 +203,10 @@ class ZestyRecommender:
             input_data (dict): Payload built by the reasoning node.
                 Required keys: tags (list[str])
                 Optional keys: reference (str), search_strategy (str),
-                               semantic_hints (list[str])
+                               semantic_hints (list[str]), page (int, 0-indexed)
 
         Returns:
-            list[dict]: Up to 10 recommendation dicts, each containing
+            list[dict]: Up to 10 recommendation dicts per page, each containing
                 title, image, synopsis, score, genres, similarity_score,
                 and match_reason.
         """
@@ -152,7 +214,10 @@ class ZestyRecommender:
         reference = input_data.get("reference", "")
         strategy = input_data.get("search_strategy", "hybrid")
         semantic_hints = input_data.get("semantic_hints", [])
-        limit = 10
+        media_type = input_data.get("type", "anime")
+        page = int(input_data.get("page", 0))
+        page_size = 10
+        candidate_scan_limit = 500  # scan enough to fill multiple pages
 
         query_tag_set = set(t.lower() for t in tags)
 
@@ -160,25 +225,18 @@ class ZestyRecommender:
         semantic_scores = np.zeros(len(self.df))
 
         if reference:
-            # Try to find the reference title in the dataset
-            mask = self.df["title"].str.contains(
-                reference, case=False, na=False
-            )
+            mask = self.df["title"].str.contains(reference, case=False, na=False)
             ref_indices = self.df[mask].index
-
             if not ref_indices.empty:
-                # Use pre-computed embedding — no model load needed
                 ref_vec = self.embeddings[ref_indices[0]]
                 semantic_scores = self.embeddings @ ref_vec
             else:
-                # Reference not in dataset — encode the query instead
                 query_text = f"{reference} {' '.join(tags)} {' '.join(semantic_hints)}"
                 encoder = self._get_encoder()
                 q_vec = encoder.encode([query_text])[0]
                 q_vec = q_vec / (np.linalg.norm(q_vec) or 1)
                 semantic_scores = self.embeddings @ q_vec
         else:
-            # No reference — encode tags + hints as the query
             query_text = " ".join(tags) + " " + " ".join(semantic_hints)
             if query_text.strip():
                 encoder = self._get_encoder()
@@ -186,19 +244,21 @@ class ZestyRecommender:
                 q_vec = q_vec / (np.linalg.norm(q_vec) or 1)
                 semantic_scores = self.embeddings @ q_vec
 
-        semantic_scores = np.maximum(semantic_scores, 0)  # clamp negatives
+        semantic_scores = np.maximum(semantic_scores, 0)
 
         # ── 2. Jaccard tag similarity ──────────────────────────────────────
         jaccard_scores = np.array(
             [self._jaccard(query_tag_set, ts) for ts in self.df["tag_set"]]
         )
 
-        # ── 3. Blend with strategy-dependent weights ───────────────────────
+        # ── 3. Blend scores ────────────────────────────────────────────────
+        # Popularity weight 0.25 ensures well-known, highly-rated titles
+        # surface reliably. Semantic + Jaccard cover thematic relevance.
         weights = {
-            "reference": (0.7, 0.2, 0.1),
-            "tag_only":  (0.3, 0.6, 0.1),
-            "semantic":  (0.8, 0.1, 0.1),
-            "hybrid":    (0.6, 0.3, 0.1),
+            "reference": (0.55, 0.20, 0.25),
+            "tag_only":  (0.20, 0.55, 0.25),
+            "semantic":  (0.60, 0.15, 0.25),
+            "hybrid":    (0.45, 0.30, 0.25),
         }
         w_sem, w_jac, w_pop = weights.get(strategy, weights["hybrid"])
         final_scores = (
@@ -207,30 +267,46 @@ class ZestyRecommender:
             + w_pop * self.popularity
         )
 
-        # ── 4. Rank and collect results ────────────────────────────────────
+        # ── 4. Build full deduplicated ranked list ─────────────────────────
         top_indices = final_scores.argsort()[::-1]
 
-        results = []
-        for idx in top_indices:
-            row = self.df.iloc[idx]
+        all_results = []
+        seen_base_titles = set()
+        SCORE_THRESHOLD = 7.0
 
-            # Skip the reference title itself
-            if reference and reference.lower() in str(row["title"]).lower():
-                continue
+        def _collect(indices, min_score, target):
+            for rank, idx in enumerate(indices):
+                if len(all_results) >= target:
+                    break
+                if rank >= candidate_scan_limit:
+                    break
 
-            synopsis_raw = str(row.get("synopsis", "No synopsis available."))
-            synopsis = (
-                synopsis_raw[:250] + "..."
-                if len(synopsis_raw) > 250
-                else synopsis_raw
-            )
+                row = self.df.iloc[idx]
+                title = str(row.get("title", "Unknown"))
+                item_score = float(row.get("score", 0.0))
 
-            results.append(
-                {
-                    "title": str(row.get("title", "Unknown")),
+                if reference and reference.lower() in title.lower():
+                    continue
+                if item_score < min_score:
+                    continue
+
+                base = self._base_title(title)
+                if base in seen_base_titles:
+                    continue
+                seen_base_titles.add(base)
+
+                synopsis_raw = str(row.get("synopsis", "No synopsis available."))
+                synopsis = (
+                    synopsis_raw[:500] + "..."
+                    if len(synopsis_raw) > 500
+                    else synopsis_raw
+                )
+
+                all_results.append({
+                    "title": title,
                     "image": str(row.get("image", "")),
                     "synopsis": synopsis,
-                    "score": float(row.get("score", 0.0)),
+                    "score": item_score,
                     "genres": (
                         row["clean_tags"].split() if row["clean_tags"] else []
                     ),
@@ -240,13 +316,18 @@ class ZestyRecommender:
                         float(jaccard_scores[idx]),
                         strategy,
                     ),
-                }
-            )
+                })
 
-            if len(results) >= limit:
-                break
+        # First pass: well-rated titles only (score >= 7.0)
+        _collect(top_indices, SCORE_THRESHOLD, (page + 1) * page_size + 10)
+        # Second pass: fill with anything if not enough results
+        if len(all_results) < (page + 1) * page_size:
+            _collect(top_indices, 0.0, (page + 1) * page_size + 10)
 
-        return results
+        # ── 5. Paginate ────────────────────────────────────────────────────
+        start = page * page_size
+        end = start + page_size
+        return all_results[start:end]
 
     # ── Match reason builder ──────────────────────────────────────────────
 

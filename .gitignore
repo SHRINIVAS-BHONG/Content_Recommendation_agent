@@ -1,4 +1,4 @@
-# Python
+# ── Python ────────────────────────────────────────────────────────────────
 __pycache__/
 *.pyc
 *.pyo
@@ -6,35 +6,52 @@ __pycache__/
 dist/
 build/
 
-# Virtual environment
+# ── Virtual environment ───────────────────────────────────────────────────
 .venv/
 venv/
 
-# Environment variables
+# ── Environment variables ─────────────────────────────────────────────────
 .env
 
-# ML models (too large for Git, regenerate with scripts/train_model.py)
+# ── ML models (large binary files — regenerate with scripts/train_model.py)
 *.pkl
 
-# Datasets (too large for Git)
+# ── Datasets (large — regenerate with the Jupyter notebooks in data/)
 data/*.csv
 data/*.json
 data/*.ipynb
 
-# Keep data/ folder structure
+# Keep the data/ folder itself in the repo
 !data/.gitkeep
 
-# Zone.Identifier files (WSL artifacts)
+# ── Frontend build output & dependencies ─────────────────────────────────
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/*.local
+
+# ── WSL Zone.Identifier artifacts ────────────────────────────────────────
+*Zone.Identifier
 *:Zone.Identifier
 
-# IDE / Editor
+# ── IDE / Editor ──────────────────────────────────────────────────────────
 .vscode/
 .cursor/
 .kiro/
+.idea/
+*.suo
+*.sw?
+.DS_Store
 
-# Testing
+# ── Testing / coverage ────────────────────────────────────────────────────
 .hypothesis/
 .pytest_cache/
+htmlcov/
+.coverage
 
-# Misc
+# ── Logs ──────────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── Misc ──────────────────────────────────────────────────────────────────
 CODEBASE.md

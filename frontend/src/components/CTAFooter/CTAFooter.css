@@ -1,0 +1,120 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   CTAFooter — Stats + Final call-to-action
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.cta-footer {
+  padding: 100px 5% 60px;
+  background: transparent;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ── Neon accent line at top ───────────────────────────────────────────── */
+.cta-footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--accent-orange) 20%,
+    var(--accent-amber) 50%,
+    var(--accent-red) 80%,
+    transparent
+  );
+}
+
+/* ── Stats row ─────────────────────────────────────────────────────────── */
+.cta-footer__stats {
+  display: flex;
+  justify-content: center;
+  gap: 60px;
+  margin-bottom: 60px;
+  flex-wrap: wrap;
+}
+
+.cta-footer__stat {
+  text-align: center;
+}
+
+.cta-footer__stat-value {
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 4vw, 3.5rem);
+  font-weight: 900;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.cta-footer__stat-value--violet { color: var(--accent-orange-light); }
+.cta-footer__stat-value--cyan   { color: var(--accent-amber); }
+.cta-footer__stat-value--pink   { color: var(--accent-red-light); }
+.cta-footer__stat-value--gold   { color: var(--accent-amber-light); }
+
+.cta-footer__stat-label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* ── CTA block ─────────────────────────────────────────────────────────── */
+.cta-footer__cta {
+  text-align: center;
+  margin-bottom: 60px;
+}
+
+.cta-footer__cta h2 {
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 3vw, 2.5rem);
+  font-weight: 800;
+  margin-bottom: 16px;
+}
+
+.cta-footer__cta p {
+  font-size: 1.05rem;
+  color: var(--text-secondary);
+  margin-bottom: 30px;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ── Bottom bar ────────────────────────────────────────────────────────── */
+.cta-footer__bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 30px;
+  border-top: 1px solid var(--glass-border);
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.cta-footer__brand {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.cta-footer__tech {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.cta-footer__tech-badge {
+  padding: 4px 12px;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 600;
+  border-radius: var(--radius-full);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  color: var(--text-muted);
+}
+
+@media (max-width: 768px) {
+  .cta-footer__stats { gap: 30px; }
+}

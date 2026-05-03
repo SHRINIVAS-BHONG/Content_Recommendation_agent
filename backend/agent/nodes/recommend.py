@@ -137,7 +137,8 @@ def recommend_node(state: AgentState) -> AgentState:
     tags: List[str] = state.get("tags", [])
     reference: str  = state.get("reference", "")
     model_input: Dict[str, Any] = state.get("model_input", {})
-    
+    page: int = state.get("page", 0)
+
     # User context fields
     is_authenticated: bool = state.get("is_authenticated", False)
     personalization_weights: Dict[str, float] = state.get("personalization_weights") or {}
@@ -147,7 +148,7 @@ def recommend_node(state: AgentState) -> AgentState:
     # Use the enriched model_input built by the reasoning node when available;
     # fall back to the legacy flat payload for backwards compatibility.
     if model_input:
-        input_data = model_input
+        input_data = dict(model_input)  # copy so we can add page
         payload_format = "enriched"
     else:
         input_data = {
@@ -156,6 +157,9 @@ def recommend_node(state: AgentState) -> AgentState:
             "reference": reference,
         }
         payload_format = "legacy"
+
+    # Always inject the page so the model can paginate
+    input_data["page"] = page
 
     # ── Append reasoning trace entry ───────────────────────────────────────
     reasoning_trace: List[str] = state.get("reasoning_trace", [])
