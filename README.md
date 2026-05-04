@@ -93,8 +93,8 @@ This will install:
 **4. Prepare Dataset**
 
 Ensure the following files exist in the `data/` directory:
-- `refined_anime_dataset.json` (13,000+ anime entries)
-- `refined_manga_dataset.json` (13,000+ manga entries)
+- `refined_anime_dataset.json`
+- `refined_manga_dataset.json` 
 
 **5. Train ML Models** (First Time Only)
 
